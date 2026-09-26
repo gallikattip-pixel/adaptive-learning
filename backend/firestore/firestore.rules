@@ -1,0 +1,16 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ARCHITECTURE NOTICE:
+    // Client browsers do NOT read/write directly to Firestore using client rules.
+    // All application reads, writes, and business logic are authorized and executed
+    // by the Express backend using the Firebase Admin SDK.
+    //
+    // Therefore, direct client access is locked down by default.
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
