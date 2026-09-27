@@ -49,6 +49,20 @@ export interface ResourceRecommendation {
   estimated_minutes?: number;
 }
 
+export interface YouTubeVideoRecommendation {
+  video_id: string;
+  title: string;
+  channel_title: string;
+  thumbnail_url: string;
+  youtube_url: string;
+  embed_url: string;
+  target_skill: string;
+  concept: string;
+  difficulty: string;
+  estimated_minutes?: number;
+  reason: string;
+}
+
 export interface RiskAssessment {
   risk_level: string; // NORMAL | AT_RISK | NEEDS_INTERVENTION
   risk_score: number;
@@ -79,6 +93,7 @@ export interface UnifiedPersonalizedPlan {
   skill_gaps: SkillGapItem[];
   mastery: MasteryItem[];
   recommendations: ResourceRecommendation[];
+  video_recommendations?: YouTubeVideoRecommendation[];
   risk: RiskAssessment;
   intervention: InterventionRecommendation;
   metadata: GatewayMetadata;

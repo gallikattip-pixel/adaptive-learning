@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { buildCommonStudentInput } from '../services/stateAggregator.js';
 import { generatePersonalizedPlan, MlGatewayError, UnifiedPersonalizedPlan } from '../services/mlGateway.js';
+import { getYouTubeRecommendationsForPlan } from '../services/youtubeService.js';
 
 /**
  * GET /api/v1/ml/personalized-plan
@@ -10,7 +11,8 @@ import { generatePersonalizedPlan, MlGatewayError, UnifiedPersonalizedPlan } fro
  * 1. Extracts authenticated Firebase UID from req.user (strictly rejects unverified student IDs).
  * 2. Aggregates real Firestore student state via buildCommonStudentInput().
  * 3. Dispatches payload to ML Gateway via generatePersonalizedPlan().
- * 4. Returns UnifiedPersonalizedPlan without persisting to database.
+ * 4. Enriches plan with real-time YouTube micro-learning recommendations for active skill gaps.
+ * 5. Returns UnifiedPersonalizedPlan without persisting to database.
  */
 export async function getPersonalizedPlan(req: Request, res: Response, next: NextFunction): Promise<void> {
   const startTime = Date.now();
@@ -38,11 +40,24 @@ export async function getPersonalizedPlan(req: Request, res: Response, next: Nex
     // 2. Request unified plan across all 5 ML models via ML Gateway client service
     const plan: UnifiedPersonalizedPlan = await generatePersonalizedPlan(studentInput);
 
+    // 3. Enrich plan with real YouTube video recommendations based on active skill gaps
+    try {
+      const videoRecs = await getYouTubeRecommendationsForPlan(
+        (plan.skill_gaps as any) || [],
+        (plan.mastery as any) || []
+      );
+      plan.video_recommendations = videoRecs;
+    } catch (ytErr) {
+      // Safe graceful degradation: ML plan succeeds even if YouTube API fails or is not configured
+      console.warn('[ML Controller] YouTube recommendation fetch failed (degraded gracefully):', ytErr instanceof Error ? ytErr.message : 'Unknown error');
+      plan.video_recommendations = [];
+    }
+
     const elapsedMs = Date.now() - startTime;
     // Safe operational logging only — no tokens, no PII, no raw history, no full plans logged
-    console.log(`[ML Controller] Generated personalized plan successfully in ${elapsedMs}ms`);
+    console.log(`[ML Controller] Generated personalized plan successfully in ${elapsedMs}ms (${(plan.video_recommendations || []).length} video recommendations)`);
 
-    // 3. Return the UnifiedPersonalizedPlan directly
+    // 4. Return the enriched UnifiedPersonalizedPlan directly
     res.status(200).json(plan);
   } catch (error) {
     const elapsedMs = Date.now() - startTime;

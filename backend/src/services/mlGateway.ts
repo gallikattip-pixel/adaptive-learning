@@ -47,6 +47,8 @@ export interface GatewayMetadata {
   timestamp?: string;
 }
 
+import type { YouTubeVideoRecommendation } from './youtubeService.js';
+
 /**
  * Standardized Unified Personalized Plan Output
  */
@@ -56,6 +58,7 @@ export interface UnifiedPersonalizedPlan {
   skill_gaps: Record<string, any>[];
   mastery: Record<string, any>[];
   recommendations: Record<string, any>[];
+  video_recommendations?: YouTubeVideoRecommendation[];
   risk: Record<string, any>;
   intervention: Record<string, any>;
   metadata: GatewayMetadata;
