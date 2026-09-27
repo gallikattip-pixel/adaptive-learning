@@ -1,6 +1,6 @@
 import React from 'react';
 import type { StudentUser } from '@/types/auth';
-import type { LearningPathway, SkillNode } from '@/types/learning';
+import type { StudentPathway, PathwayNode, SkillNode } from '@/types/learning';
 import type { UnifiedPersonalizedPlan } from '@/types/ml';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
@@ -21,19 +21,19 @@ import {
 
 export interface OverviewSectionProps {
   user: StudentUser | null;
-  pathways: LearningPathway[];
+  pathway: StudentPathway | null;
   isLoading: boolean;
   plan: UnifiedPersonalizedPlan | null;
   isLoadingPlan: boolean;
   planError: string | null;
   onRetryPlan: () => void;
   onNavigateTab: (tab: 'roadmap' | 'skills' | 'practice' | 'diagnostics' | 'learning' | 'progress') => void;
-  onSelectSkill: (skill: SkillNode) => void;
+  onSelectSkill: (skill: PathwayNode | SkillNode) => void;
 }
 
 export const OverviewSection: React.FC<OverviewSectionProps> = ({
   user,
-  pathways,
+  pathway,
   isLoading,
   plan,
   isLoadingPlan,
@@ -365,27 +365,27 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
           <Card className="py-12 text-center text-muted font-mono text-xs bg-warm-ivory">
             Querying active student pathways from backend API...
           </Card>
-        ) : pathways.length > 0 ? (
+        ) : pathway && pathway.nodes.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {pathways.map((pw) => (
-              <Card key={pw.id} className="p-6 bg-warm-ivory border-deep-green/30 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-dark-text">{pw.title}</h4>
-                  <Badge variant="yellow">{pw.nodes.length} Nodes</Badge>
-                </div>
-                <p className="text-xs text-muted leading-relaxed">{pw.description}</p>
-                <div className="flex gap-2">
-                  <Button variant="secondary" size="sm" onClick={() => onNavigateTab('roadmap')}>
-                    Open Roadmap
+            <Card className="p-6 bg-warm-ivory border-deep-green/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-dark-text">Prerequisite Learning Sequence</h4>
+                <Badge variant="yellow">{pathway.nodes.length} Nodes</Badge>
+              </div>
+              <p className="text-xs text-muted leading-relaxed">
+                Dynamic skill graph generated from prerequisite dependencies and mastery states.
+              </p>
+              <div className="flex gap-2">
+                <Button variant="secondary" size="sm" onClick={() => onNavigateTab('roadmap')}>
+                  Open Roadmap
+                </Button>
+                {pathway.nodes.length > 0 && (
+                  <Button variant="outline" size="sm" onClick={() => onSelectSkill(pathway.nodes[0])}>
+                    Inspect Skill
                   </Button>
-                  {pw.nodes.length > 0 && (
-                    <Button variant="outline" size="sm" onClick={() => onSelectSkill(pw.nodes[0])}>
-                      Inspect Skill
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            ))}
+                )}
+              </div>
+            </Card>
           </div>
         ) : (
           <EmptyState

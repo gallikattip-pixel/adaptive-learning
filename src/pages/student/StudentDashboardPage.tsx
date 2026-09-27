@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { mlService } from '@/services/ml/mlService';
 import { apiClient } from '@/services/api/apiClient';
-import type { LearningPathway, SkillNode } from '@/types/learning';
+import type { StudentPathway, PathwayNode, SkillNode } from '@/types/learning';
 import type { UnifiedPersonalizedPlan } from '@/types/ml';
 
 // Sidebar & Header
@@ -34,8 +34,8 @@ export const StudentDashboardPage: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
   // Data & API States
-  const [pathways, setPathways] = useState<LearningPathway[]>([]);
-  const [isLoadingPathways, setIsLoadingPathways] = useState<boolean>(true);
+  const [pathway, setPathway] = useState<StudentPathway | null>(null);
+  const [isLoadingPathway, setIsLoadingPathway] = useState<boolean>(true);
   const [apiConnectionStatus, setApiConnectionStatus] = useState<'testing' | 'offline' | 'online'>('testing');
 
   // Real-Time ML Personalized Plan States
@@ -48,20 +48,20 @@ export const StudentDashboardPage: React.FC = () => {
   const isFetchingPlanRef = useRef(false);
 
   // Selected Skill for Detail Inspection Modal
-  const [selectedSkill, setSelectedSkill] = useState<SkillNode | null>(null);
+  const [selectedSkill, setSelectedSkill] = useState<PathwayNode | SkillNode | null>(null);
 
   // Fetch Pathways from Backend
   const fetchStudentPathways = useCallback(async () => {
-    setIsLoadingPathways(true);
+    setIsLoadingPathway(true);
     try {
-      const response = await apiClient.get<LearningPathway[]>('/student/pathways');
-      setPathways(response.data || []);
+      const response = await apiClient.get<StudentPathway>('/student/pathways');
+      setPathway(response.data || null);
       setApiConnectionStatus('online');
     } catch {
-      setPathways([]);
+      setPathway(null);
       setApiConnectionStatus('offline');
     } finally {
-      setIsLoadingPathways(false);
+      setIsLoadingPathway(false);
     }
   }, []);
 
@@ -155,8 +155,8 @@ export const StudentDashboardPage: React.FC = () => {
               {activeTab === 'overview' && (
                 <OverviewSection
                   user={user}
-                  pathways={pathways}
-                  isLoading={isLoadingPathways}
+                  pathway={pathway}
+                  isLoading={isLoadingPathway}
                   plan={personalizedPlan}
                   isLoadingPlan={isLoadingPlan}
                   planError={planError}
@@ -171,7 +171,7 @@ export const StudentDashboardPage: React.FC = () => {
 
               {activeTab === 'skills' && (
                 <MySkillsSection
-                  pathways={pathways}
+                  pathway={pathway}
                   plan={personalizedPlan}
                   isLoadingPlan={isLoadingPlan}
                   planError={planError}
@@ -183,7 +183,7 @@ export const StudentDashboardPage: React.FC = () => {
 
               {activeTab === 'roadmap' && (
                 <RoadmapSection
-                  pathways={pathways}
+                  pathway={pathway}
                   onSelectSkill={(skill) => setSelectedSkill(skill)}
                   onStartDiagnostic={() => setActiveTab('practice')}
                 />

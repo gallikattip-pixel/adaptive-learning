@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { SkillNode, LearningPathway } from '@/types/learning';
+import type { SkillNode, PathwayNode, StudentPathway } from '@/types/learning';
 import type { UnifiedPersonalizedPlan } from '@/types/ml';
 import { Card } from '@/components/common/Card';
 import { Badge } from '@/components/common/Badge';
@@ -9,17 +9,17 @@ import { formatSkillName, formatStatusLabel, formatPriorityLabel } from '@/lib/m
 import { AlertTriangle, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 
 export interface MySkillsSectionProps {
-  pathways: LearningPathway[];
+  pathway: StudentPathway | null;
   plan: UnifiedPersonalizedPlan | null;
   isLoadingPlan: boolean;
   planError: string | null;
   onRetryPlan: () => void;
-  onSelectSkill: (skill: SkillNode) => void;
+  onSelectSkill: (skill: PathwayNode | SkillNode) => void;
   onStartDiagnostic: () => void;
 }
 
 export const MySkillsSection: React.FC<MySkillsSectionProps> = ({
-  pathways,
+  pathway,
   plan,
   isLoadingPlan,
   planError,
@@ -29,7 +29,7 @@ export const MySkillsSection: React.FC<MySkillsSectionProps> = ({
 }) => {
   const [filter, setFilter] = useState<'all' | 'gaps' | 'mastered' | 'in_progress'>('all');
 
-  const pathwaySkills: SkillNode[] = pathways.flatMap((p) => p.nodes);
+  const pathwaySkills: PathwayNode[] = pathway?.nodes || [];
   const mlSkillGaps = plan?.skill_gaps || [];
 
   // Filter ML skill gaps
@@ -185,22 +185,31 @@ export const MySkillsSection: React.FC<MySkillsSectionProps> = ({
         </div>
       ) : pathwaySkills.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {pathwaySkills.map((skill) => (
-            <Card
-              key={skill.id}
-              onClick={() => onSelectSkill(skill)}
-              className="p-6 bg-warm-ivory border-deep-green/30 hover:border-deep-green cursor-pointer space-y-3"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-xs font-bold text-dark-green">{skill.code}</span>
-                <Badge variant={skill.status === 'mastered' ? 'deepGreen' : 'yellow'}>
-                  {skill.status || 'unlocked'}
-                </Badge>
-              </div>
-              <h3 className="font-bold text-dark-text text-sm">{skill.title}</h3>
-              <p className="text-xs text-muted line-clamp-2">{skill.description}</p>
-            </Card>
-          ))}
+          {pathwaySkills.map((skill) => {
+            const skillId = skill.skill_id || (skill as any).id || (skill as any).code || 'skill';
+            const skillTitle = skill.skill_name || (skill as any).title || formatSkillName(skillId);
+            const statusUpper = (skill.status || 'UNLOCKED').toUpperCase();
+            const isMastered = statusUpper === 'MASTERED' || statusUpper === 'STRONG';
+
+            return (
+              <Card
+                key={skillId}
+                onClick={() => onSelectSkill(skill)}
+                className="p-6 bg-warm-ivory border-deep-green/30 hover:border-deep-green cursor-pointer space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-xs font-bold text-dark-green">{skillId}</span>
+                  <Badge variant={isMastered ? 'deepGreen' : 'yellow'}>
+                    {skill.status || 'unlocked'}
+                  </Badge>
+                </div>
+                <h3 className="font-bold text-dark-text text-sm">{skillTitle}</h3>
+                {skill.description && (
+                  <p className="text-xs text-muted line-clamp-2">{skill.description}</p>
+                )}
+              </Card>
+            );
+          })}
         </div>
       ) : (
         <EmptyState

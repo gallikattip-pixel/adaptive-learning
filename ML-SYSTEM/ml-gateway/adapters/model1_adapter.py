@@ -150,11 +150,11 @@ class Model1GatewayAdapter:
         # 2. Try direct module in hybrid or direct mode
         if exec_mode in ("hybrid", "direct"):
             try:
-                if str(MODEL1_DIR) not in sys.path:
-                    sys.path.insert(0, str(MODEL1_DIR))
-                from src.predict import predict_skill_gaps
-                raw_out = predict_skill_gaps(payload)
-                return cls.normalize_response(raw_out)
+                from adapters.isolation import isolate_model_environment
+                with isolate_model_environment(MODEL1_DIR):
+                    from src.predict import predict_skill_gaps
+                    raw_out = predict_skill_gaps(payload)
+                    return cls.normalize_response(raw_out)
             except Exception as e:
                 raise ModelInferenceException("model1", f"Model 1 in-process execution failed: {e}")
 

@@ -1,12 +1,12 @@
 import React from 'react';
-import type { SkillNode } from '@/types/learning';
+import type { PathwayNode, SkillNode } from '@/types/learning';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
 import { X, GitBranch, Layers } from 'lucide-react';
 
 export interface SkillDetailModalProps {
-  skill: SkillNode | null;
+  skill: PathwayNode | SkillNode | null;
   onClose: () => void;
   onStartPractice?: (skillId: string) => void;
 }
@@ -18,6 +18,38 @@ export const SkillDetailModal: React.FC<SkillDetailModalProps> = ({
 }) => {
   if (!skill) return null;
 
+  const skillId =
+    'skill_id' in skill && skill.skill_id
+      ? skill.skill_id
+      : 'id' in skill && skill.id
+      ? skill.id
+      : 'skill';
+
+  const skillCode =
+    'skill_id' in skill && skill.skill_id
+      ? skill.skill_id
+      : 'code' in skill && skill.code
+      ? skill.code
+      : 'SKILL_NODE';
+
+  const skillTitle =
+    'skill_name' in skill && skill.skill_name
+      ? skill.skill_name
+      : 'title' in skill && skill.title
+      ? skill.title
+      : skillCode;
+
+  const skillDomain = skill.domain || 'Game Development';
+  const skillDesc =
+    skill.description || 'Deterministic prerequisite skill graph node evaluated from mastery performance.';
+
+  const prereqs =
+    'prerequisites' in skill && Array.isArray(skill.prerequisites)
+      ? skill.prerequisites
+      : 'prerequisiteIds' in skill && Array.isArray(skill.prerequisiteIds)
+      ? skill.prerequisiteIds
+      : [];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark-green/80 backdrop-blur-sm animate-fade-in">
       <Card className="w-full max-w-lg bg-warm-ivory border-deep-green/40 shadow-2xl p-6 sm:p-8 space-y-6 relative text-dark-text">
@@ -25,10 +57,10 @@ export const SkillDetailModal: React.FC<SkillDetailModalProps> = ({
         <div className="flex items-start justify-between pb-4 border-b border-deep-green/20">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Badge variant="yellow">{skill.code || 'SKILL_NODE'}</Badge>
-              <span className="font-mono text-xs text-muted">{skill.domain}</span>
+              <Badge variant="yellow">{skillCode}</Badge>
+              <span className="font-mono text-xs text-muted">{skillDomain}</span>
             </div>
-            <h2 className="text-xl font-extrabold text-dark-text">{skill.title}</h2>
+            <h2 className="text-xl font-extrabold text-dark-text">{skillTitle}</h2>
           </div>
           <button
             onClick={onClose}
@@ -43,17 +75,17 @@ export const SkillDetailModal: React.FC<SkillDetailModalProps> = ({
         <div className="space-y-4 text-xs text-dark-text leading-relaxed">
           <div>
             <h4 className="font-bold text-dark-text uppercase tracking-wider mb-1 text-[11px]">Description</h4>
-            <p className="text-muted leading-relaxed">{skill.description}</p>
+            <p className="text-muted leading-relaxed">{skillDesc}</p>
           </div>
 
           <div>
             <h4 className="font-bold text-dark-text uppercase tracking-wider mb-1.5 text-[11px] flex items-center gap-1.5">
               <GitBranch size={14} className="text-dark-green" />
-              Prerequisite Dependencies ({skill.prerequisiteIds.length})
+              Prerequisite Dependencies ({prereqs.length})
             </h4>
-            {skill.prerequisiteIds.length > 0 ? (
+            {prereqs.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {skill.prerequisiteIds.map((preId) => (
+                {prereqs.map((preId) => (
                   <span
                     key={preId}
                     className="px-2.5 py-1 rounded bg-ivory border border-deep-green/30 font-mono text-[11px] text-dark-text"
@@ -85,7 +117,7 @@ export const SkillDetailModal: React.FC<SkillDetailModalProps> = ({
               variant="primary"
               size="sm"
               onClick={() => {
-                onStartPractice(skill.id);
+                onStartPractice(skillId);
                 onClose();
               }}
             >

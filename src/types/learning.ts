@@ -1,4 +1,33 @@
-export type SkillNodeStatus = 'unlocked' | 'locked' | 'in_progress' | 'mastered' | 'gap_detected';
+export type PathwayNodeStatus =
+  | 'LOCKED'
+  | 'UNLOCKED'
+  | 'IN_PROGRESS'
+  | 'MASTERED'
+  | 'unlocked'
+  | 'locked'
+  | 'in_progress'
+  | 'mastered'
+  | 'gap_detected';
+
+export type SkillNodeStatus = PathwayNodeStatus;
+
+export interface PathwayNode {
+  skill_id: string;
+  skill_name: string;
+  status: PathwayNodeStatus;
+  prerequisites: string[];
+  blocking_prerequisites: string[];
+  mastery_level?: number;
+  recommended_difficulty?: string;
+  priority?: string;
+  domain?: string;
+  description?: string;
+}
+
+export interface StudentPathway {
+  student_id: string;
+  nodes: PathwayNode[];
+}
 
 export interface SkillNode {
   id: string;
