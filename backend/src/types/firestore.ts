@@ -75,29 +75,54 @@ export interface AssessmentDocument {
   title: string;
   description: string;
   assessmentType: AssessmentType;
-  skillId: string;
+  skillId?: string;
+  domain?: string;
+  skillIds?: string[];
   createdAt: string;
   updatedAt: string;
 }
 
 // 8. assessmentQuestions/{questionId}
+export type QuestionType = 'MULTIPLE_CHOICE' | 'SINGLE_CHOICE';
+export type QuestionDifficultyLevel = 'EASY' | 'MEDIUM' | 'HARD';
+
 export interface AssessmentQuestionDocument {
   id: string;
   assessmentId: string;
+  skillId: string;
   questionText: string;
-  questionType: string;
+  questionType: QuestionType | string;
+  options: string[];
+  correctAnswer: string;
   difficulty: number;
+  difficultyLevel?: QuestionDifficultyLevel;
+  explanation?: string;
   createdAt: string;
 }
 
 // 9. assessmentAttempts/{attemptId}
+export type AssessmentAttemptStatus = 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED';
+
+export interface SkillAttemptSummary {
+  skillId: string;
+  totalQuestions: number;
+  correctCount: number;
+  score: number;
+}
+
 export interface AssessmentAttemptDocument {
   id: string;
   assessmentId: string;
   studentId: string;
+  status: AssessmentAttemptStatus;
   startedAt: string;
   completedAt?: string;
   score?: number;
+  totalQuestions?: number;
+  correctCount?: number;
+  skillSummary?: Record<string, SkillAttemptSummary>;
+  passed?: boolean;
+  isPassed?: boolean;
 }
 
 // 10. studentAnswers/{answerId}
@@ -105,9 +130,13 @@ export interface StudentAnswerDocument {
   id: string;
   attemptId: string;
   questionId: string;
+  studentId?: string;
+  skillId: string;
   answer: string;
   isCorrect: boolean;
   answeredAt: string;
+  latencyMs?: number;
+  timeSeconds?: number;
 }
 
 // 11. learningActivity/{activityId}

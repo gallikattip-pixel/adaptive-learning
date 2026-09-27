@@ -9,8 +9,10 @@ import type {
   LearningRiskPredictionResponse,
   InterestPredictionRequest,
   InterestPredictionResponse,
+  UnifiedPersonalizedPlan,
 } from '@/types/ml';
 import { API_CONFIG } from '@/services/api/config';
+import { apiClient } from '@/services/api/apiClient';
 
 export class MlService {
   private getAuthHeaders(): Record<string, string> {
@@ -20,6 +22,19 @@ export class MlService {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
   }
+
+  /**
+   * Fetches the real-time Unified Personalized Plan for the currently authenticated student
+   * from the Node.js backend (GET /api/v1/ml/personalized-plan).
+   */
+  async getPersonalizedPlan(): Promise<UnifiedPersonalizedPlan> {
+    const response = await apiClient.get<UnifiedPersonalizedPlan>('/ml/personalized-plan');
+    return response.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // Legacy / Direct endpoints
+  // -------------------------------------------------------------------------
 
   async predictSkillGaps(request: SkillGapPredictionRequest): Promise<SkillGapPredictionResponse | null> {
     try {

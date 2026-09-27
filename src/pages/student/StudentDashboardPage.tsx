@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
@@ -6,6 +6,7 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { mlService } from '@/services/ml/mlService';
 import { apiClient } from '@/services/api/apiClient';
 import type { LearningPathway, SkillNode } from '@/types/learning';
+import type { UnifiedPersonalizedPlan } from '@/types/ml';
 
 // Sidebar & Header
 import { StudentSidebar, type DashboardTab } from '@/components/student/StudentSidebar';
@@ -36,50 +37,62 @@ export const StudentDashboardPage: React.FC = () => {
   const [pathways, setPathways] = useState<LearningPathway[]>([]);
   const [isLoadingPathways, setIsLoadingPathways] = useState<boolean>(true);
   const [apiConnectionStatus, setApiConnectionStatus] = useState<'testing' | 'offline' | 'online'>('testing');
-  const [mlEndpointStatus, setMlEndpointStatus] = useState<'unconfigured' | 'active'>('unconfigured');
+
+  // Real-Time ML Personalized Plan States
+  const [personalizedPlan, setPersonalizedPlan] = useState<UnifiedPersonalizedPlan | null>(null);
+  const [isLoadingPlan, setIsLoadingPlan] = useState<boolean>(true);
+  const [planError, setPlanError] = useState<string | null>(null);
+  const [mlEndpointStatus, setMlEndpointStatus] = useState<'unconfigured' | 'loading' | 'active' | 'offline'>('loading');
+
+  // Prevent duplicate concurrent plan fetches
+  const isFetchingPlanRef = useRef(false);
 
   // Selected Skill for Detail Inspection Modal
   const [selectedSkill, setSelectedSkill] = useState<SkillNode | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function fetchStudentPathways() {
-      setIsLoadingPathways(true);
-      try {
-        const response = await apiClient.get<LearningPathway[]>('/student/pathways');
-        if (isMounted) {
-          setPathways(response.data || []);
-          setApiConnectionStatus('online');
-        }
-      } catch {
-        if (isMounted) {
-          setPathways([]);
-          setApiConnectionStatus('offline');
-        }
-      } finally {
-        if (isMounted) setIsLoadingPathways(false);
-      }
+  // Fetch Pathways from Backend
+  const fetchStudentPathways = useCallback(async () => {
+    setIsLoadingPathways(true);
+    try {
+      const response = await apiClient.get<LearningPathway[]>('/student/pathways');
+      setPathways(response.data || []);
+      setApiConnectionStatus('online');
+    } catch {
+      setPathways([]);
+      setApiConnectionStatus('offline');
+    } finally {
+      setIsLoadingPathways(false);
     }
+  }, []);
 
-    async function checkMlGateway() {
-      if (!user) return;
-      const res = await mlService.predictSkillGaps({
-        studentId: user.uid || user.id || '',
-        targetSkillId: 'diagnostic_check',
-      });
-      if (isMounted) {
-        setMlEndpointStatus(res ? 'active' : 'unconfigured');
-      }
+  // Fetch Real-time Unified Personalized Plan from Node Backend (GET /api/v1/ml/personalized-plan)
+  const fetchPersonalizedPlan = useCallback(async () => {
+    if (!user || isFetchingPlanRef.current) return;
+    isFetchingPlanRef.current = true;
+    setIsLoadingPlan(true);
+    setPlanError(null);
+    setMlEndpointStatus('loading');
+
+    try {
+      const plan = await mlService.getPersonalizedPlan();
+      setPersonalizedPlan(plan);
+      setMlEndpointStatus('active');
+    } catch (err) {
+      console.warn('[StudentDashboard] Unable to fetch real-time personalized plan:', err);
+      const msg = err instanceof Error ? err.message : 'Unable to connect to ML Gateway';
+      setPlanError(msg);
+      setMlEndpointStatus('offline');
+    } finally {
+      setIsLoadingPlan(false);
+      isFetchingPlanRef.current = false;
     }
-
-    fetchStudentPathways();
-    checkMlGateway();
-
-    return () => {
-      isMounted = false;
-    };
   }, [user]);
+
+  // Initial mount load
+  useEffect(() => {
+    fetchStudentPathways();
+    fetchPersonalizedPlan();
+  }, [fetchStudentPathways, fetchPersonalizedPlan]);
 
   const handleLogout = () => {
     logout();
@@ -144,6 +157,10 @@ export const StudentDashboardPage: React.FC = () => {
                   user={user}
                   pathways={pathways}
                   isLoading={isLoadingPathways}
+                  plan={personalizedPlan}
+                  isLoadingPlan={isLoadingPlan}
+                  planError={planError}
+                  onRetryPlan={fetchPersonalizedPlan}
                   onNavigateTab={(tab) => {
                     if (tab === 'diagnostics') setActiveTab('practice');
                     else setActiveTab(tab);
@@ -155,6 +172,10 @@ export const StudentDashboardPage: React.FC = () => {
               {activeTab === 'skills' && (
                 <MySkillsSection
                   pathways={pathways}
+                  plan={personalizedPlan}
+                  isLoadingPlan={isLoadingPlan}
+                  planError={planError}
+                  onRetryPlan={fetchPersonalizedPlan}
                   onSelectSkill={(skill) => setSelectedSkill(skill)}
                   onStartDiagnostic={() => setActiveTab('practice')}
                 />
@@ -170,16 +191,27 @@ export const StudentDashboardPage: React.FC = () => {
 
               {activeTab === 'learning' && (
                 <LearningSection
+                  plan={personalizedPlan}
+                  isLoadingPlan={isLoadingPlan}
+                  planError={planError}
+                  onRetryPlan={fetchPersonalizedPlan}
                   onStartDiagnostic={() => setActiveTab('practice')}
                 />
               )}
 
               {activeTab === 'practice' && (
-                <PracticeSection studentId={user?.id} />
+                <PracticeSection
+                  studentId={user?.id}
+                  onDiagnosticCompleted={fetchPersonalizedPlan}
+                />
               )}
 
               {activeTab === 'progress' && (
                 <ProgressSection
+                  plan={personalizedPlan}
+                  isLoadingPlan={isLoadingPlan}
+                  planError={planError}
+                  onRetryPlan={fetchPersonalizedPlan}
                   onStartDiagnostic={() => setActiveTab('practice')}
                 />
               )}

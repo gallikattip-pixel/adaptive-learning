@@ -63,7 +63,9 @@ class ApiClient {
       } catch {
         errorData = { code: 'UNKNOWN_ERROR', message: `Network response was not ok (${response.status})` };
       }
-      throw new Error(errorData.message);
+      const err = new Error(errorData.message);
+      Object.assign(err, { code: errorData.code, status: response.status });
+      throw err;
     }
 
     const json = await response.json();

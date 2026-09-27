@@ -4,6 +4,9 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { healthRouter } from './routes/health.js';
 import { authRouter } from './routes/auth.js';
+import { mlRouter } from './routes/ml.js';
+import { pathwayRouter } from './routes/pathway.js';
+import { diagnosticRouter } from './routes/diagnostic.js';
 import { errorHandler } from './middleware/error.js';
 import { requestLogger } from './middleware/logger.js';
 import { isFirebaseConfigured } from './config/firebase.js';
@@ -28,9 +31,12 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(requestLogger);
 
-// 3. Health & Auth Routes
+// 3. Health, Auth, ML, Student Pathway & Diagnostic Routes
 app.use('/', healthRouter);
 app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/ml', mlRouter);
+app.use('/api/v1/student', pathwayRouter);
+app.use('/api/v1/diagnostic', diagnosticRouter);
 
 // 4. Centralized Error Handling
 app.use(errorHandler);

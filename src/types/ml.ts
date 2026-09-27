@@ -3,6 +3,91 @@
  * Prepared for real-time model integration via API gateway endpoints.
  */
 
+// ---------------------------------------------------------------------------
+// Unified Personalized Plan Contract (Stage B3/B4 Response)
+// ---------------------------------------------------------------------------
+
+export interface GatewayMetadata {
+  model1_version?: string;
+  model2_version?: string;
+  model3_version?: string;
+  model4_version?: string;
+  model5_version?: string;
+  schema_version: string;
+  execution_time_ms?: number;
+  timestamp?: string;
+}
+
+export interface SkillGapItem {
+  skill: string;
+  score: number;
+  status: string; // STRONG | DEVELOPING | WEAK | NOT_READY
+  priority: string; // HIGH | MEDIUM | LOW
+  confidence?: number;
+  evidence_count?: number;
+  evidence?: Record<string, any>;
+  prerequisite_status?: string | null;
+}
+
+export interface MasteryItem {
+  skill: string;
+  mastery_probability: number;
+  mastery_status: string; // MASTERED | DEVELOPING | NOT_MASTERED
+  recommended_next_difficulty: string; // EASY | MEDIUM | HARD
+  confidence?: number;
+  evidence?: Record<string, any>;
+}
+
+export interface ResourceRecommendation {
+  resource_id: string;
+  title: string;
+  concept?: string;
+  difficulty: string;
+  score?: number;
+  match_reasons?: string[];
+  prerequisites_met?: boolean;
+  estimated_minutes?: number;
+}
+
+export interface RiskAssessment {
+  risk_level: string; // NORMAL | AT_RISK | NEEDS_INTERVENTION
+  risk_score: number;
+  confidence?: number;
+  evidence?: Record<string, any>;
+}
+
+export interface InterventionRecommendation {
+  recommended_action: string;
+  action_type: string;
+  urgency: string;
+  suggested_difficulty?: string | null;
+  resource_adjustments?: any;
+}
+
+export interface InterestSignal {
+  concept?: string;
+  score?: number;
+  confidence?: number;
+  top_interests?: string[];
+  interests?: any[];
+  [key: string]: any;
+}
+
+export interface UnifiedPersonalizedPlan {
+  student_id: string;
+  interest: InterestSignal;
+  skill_gaps: SkillGapItem[];
+  mastery: MasteryItem[];
+  recommendations: ResourceRecommendation[];
+  risk: RiskAssessment;
+  intervention: InterventionRecommendation;
+  metadata: GatewayMetadata;
+}
+
+// ---------------------------------------------------------------------------
+// Legacy Model Endpoints Types
+// ---------------------------------------------------------------------------
+
 // 1. Skill-Gap Prediction
 export interface SkillGapPredictionRequest {
   studentId: string;
