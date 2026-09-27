@@ -1,0 +1,10 @@
+.env
+.env.local
+.env.development
+.env.production
+node_modules/
+dist/
+*.log
+.DS_Store
+adaptive-learning-d9d6c-firebase-adminsdk-fbsvc-b6d3f60c35.json
+*.service-account.json
